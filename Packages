@@ -1,0 +1,8 @@
+Package: nano
+Version: $(dpkg-deb -f nano_*.deb Version)
+Architecture: $(dpkg-deb -f nano_*.deb Architecture)
+Maintainer: Termux
+Filename: nano_9.3_aarch64.deb
+Size: $(wc -c < nano_*.deb | tr -d ' ')
+Description: Nano editor
+
