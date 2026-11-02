@@ -1,8 +1,14 @@
 Package: nano
-Version: $(dpkg-deb -f nano_*.deb Version)
-Architecture: $(dpkg-deb -f nano_*.deb Architecture)
-Maintainer: Termux
-Filename: nano_9.3_aarch64.deb
-Size: $(wc -c < nano_*.deb | tr -d ' ')
-Description: Nano editor
+Version: 9.3
+Architecture: aarch64
+Maintainer: @termux
+Installed-Size: 1040
+Depends: libandroid-support, ncurses, libmagic
+Filename: ./nano_9.3_aarch64.deb
+Size: 242372
+MD5sum: 93e313b7e12ac648e34da876e2caafca
+SHA1: b0ffe5422cab001c414888d93a689bc708a06695
+SHA256: 0b1c4199f8b90f9fdfd0741b5f291c655e9b687a7dfad8bbfa4892c7146ef24f
+Homepage: https://www.nano-editor.org/
+Description: Small, free and friendly text editor
 
