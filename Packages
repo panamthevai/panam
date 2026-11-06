@@ -4,8 +4,8 @@ Architecture: all
 Maintainer: panamthevai
 Filename: ./mytool-pkg.deb
 Size: 1868
-MD5sum: 0aef37f5ddd6c3dc1ef59d8361387e1c
-SHA1: 030d69d4e1f1bf7b813496fb57a12ab14a6a2204
-SHA256: cf56fcbde2cb5abb7c41729bf8c3194fbbd6f7ec1020d72f8f33115c40a513f9
+MD5sum: bd1e4766653a15ed3d07766ddb4078fb
+SHA1: 09782177f5b3425664236e6ab6d8774d4c178982
+SHA256: f5c0f44b4da18c9eb5db4b91cff0d48aae6b7cc452080e7d5f654ff24908c01c
 Description: My own custom Termux tool from my server.
 
