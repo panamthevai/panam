@@ -1,11 +1,11 @@
 Package: panam-tool
-Version: 1.0.0
+Version: 1.0.1
 Architecture: all
 Maintainer: panamthevai
 Filename: ./mytool-pkg.deb
-Size: 888
-MD5sum: dcd41d30316394cfaa7d5d578f893067
-SHA1: fd5d719866f674691452312f6446e72bbad3646b
-SHA256: 832481388f42ccf638b6e5798106a02489ee1d2df8eb956b025ae142d3c7563d
+Size: 1528
+MD5sum: 45d525dca03f091b47f3e3127c9cb441
+SHA1: d664939929f5756f75e2f078c41f257e2969222f
+SHA256: c60aa74f0d5560e6038454008f3dddf9c84f83f7f6d187d5f213f7625b3a0976
 Description: My own custom Termux tool from my server.
 
