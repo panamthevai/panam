@@ -15,15 +15,17 @@ Homepage: https://git-scm.com/
 Description: Fast, scalable, distributed revision control system
 
 Package: mytool
-Version: 1.0
+Version: 1.0.2
 Architecture: all
-Maintainer: YourName panamthevai
-Filename: debs/mytool_1.0_all.deb
-Size: 864
-MD5sum: fc72633e4a7f1ae05f3f338d27316743
-SHA1: 7759a2fdde0196527e18a58e59f7b70a82c2adfe
-SHA256: a577cd065c154e5dd97281ef7429bd9cc4737b750c2d4f5f33d9cefffc8345ef
-Description: My custom tool hosted on my own GitHub server
+Maintainer: panamthevai
+Filename: debs/mytool_1.0.2_all.deb
+Size: 972
+MD5sum: 743ed48e2c6a693f436a427fc8f91782
+SHA1: 5c1f7395b2de4c083c06bb4bf773f75fd93ac0e8
+SHA256: e4b1ec9e0aa377596488b7ca45ae7bb0f1417be9b388f68c2e5d90c619fe676f
+Section: utils
+Priority: optional
+Description: My custom working tool for Termux
 
 Package: python
 Version: 3.14.10
