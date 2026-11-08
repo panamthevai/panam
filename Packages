@@ -1,11 +1,46 @@
-Package: panam-tool
-Version: 1.0.3
+Package: git
+Version: 2.56.0
+Architecture: aarch64
+Maintainer: Joshua Kahn <tom@termux.dev>
+Installed-Size: 25076
+Depends: libcurl, libexpat, libiconv, less, openssl, pcre2, zlib
+Recommends: openssh
+Suggests: perl
+Filename: debs/git_2.56.0_aarch64.deb
+Size: 4541040
+MD5sum: 8ce69754def265d7b2c7c32847ca8388
+SHA1: e46ac8b5cfc219f1869833a7af3322966864e024
+SHA256: dcdd22c5fdf7bdb5b825a03a17441d43858ed8515fea57fbb37eb42e733ca82f
+Homepage: https://git-scm.com/
+Description: Fast, scalable, distributed revision control system
+
+Package: mytool
+Version: 1.0
 Architecture: all
-Maintainer: panamthevai
-Filename: ./mytool-pkg.deb
-Size: 2220
-MD5sum: 4885bad8c19e9905f5c716c1efa4a4d3
-SHA1: e2c222aad245b7eeef351b0fb1eb960ff38e88b6
-SHA256: 6ddedcaf8c7db89409505e0f9528c6f1400972c1da9e46358cb59dee8f16d3fb
-Description: My own custom Termux tool from my server.
+Maintainer: YourName panamthevai
+Filename: debs/mytool_1.0_all.deb
+Size: 864
+MD5sum: fc72633e4a7f1ae05f3f338d27316743
+SHA1: 7759a2fdde0196527e18a58e59f7b70a82c2adfe
+SHA256: a577cd065c154e5dd97281ef7429bd9cc4737b750c2d4f5f33d9cefffc8345ef
+Description: My custom tool hosted on my own GitHub server
+
+Package: python
+Version: 3.14.10
+Architecture: aarch64
+Maintainer: Yaksh Bariya <thunder-coding@termux.dev>
+Installed-Size: 26508
+Depends: gdbm, libandroid-posix-semaphore, libandroid-support, libbz2, libcrypt, libexpat, libffi, liblzma, libsqlite, ncurses, ncurses-ui-libs, openssl, readline, zlib, zstd
+Recommends: python-ensurepip-wheels, python-pip
+Suggests: python-tkinter
+Breaks: python2 (<= 2.7.15), python-dev
+Replaces: python-dev
+Provides: python3
+Filename: debs/python_3.14.10_aarch64.deb
+Size: 4893180
+MD5sum: b9888e201f5718bae3fb908daaa900f3
+SHA1: ee376c570d8c1e83603599911165636bb19be538
+SHA256: 1a5a300c8d844f2c18a3bb61cafbffb2e93fba9a7106ebe967f06c9628d1e434
+Homepage: https://python.org/
+Description: Python 3 programming language intended to enable clear programs
 
