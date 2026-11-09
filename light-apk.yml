@@ -1,3 +1,4 @@
+her
 name: Build Super Light WebView APK
 
 on:
@@ -7,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # கிட்ஹப்பின் தற்காலிக கிளவுட் கணினி
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Your Project
@@ -23,14 +24,14 @@ jobs:
 
     - name: Create Light Cordova Project
       run: |
-        # 36.0.0 எரர் வராமல் இருக்க, ஆண்ட்ராய்டு 12 பதிப்பை லாக் செய்து லேசான ஆப்பை உருவாக்குகிறது
+        # 36.0.0 எரர் வராமல் இருக்க ஆண்ட்ராய்டு 12 பதிப்பை லாக் செய்கிறது
         cordova create myApp com.panam.thevai PanamApp
         cd myApp
         cordova platform add android@12.0.0 --save
 
-    - name: Move HTML/CSS Files to www
+    - name: Move HTML/CSS Files
       run: |
-        # உங்கள் index.html மற்றும் டிசைன் கோப்புகளை மட்டும் ஆப்பிற்குள் மாற்றுகிறது
+        # உங்கள் index.html மற்றும் கோப்புகளை மட்டும் Cordova www ஃபோல்டருக்குள் மாற்றுகிறது
         cp -r index.html style.css about.html assets myApp/www/ 2>/dev/null || true
 
     - name: Set up JDK 11
@@ -47,5 +48,6 @@ jobs:
     - name: Upload Tiny APK
       uses: actions/upload-artifact@v4
       with:
-        name: PanamApp-Tiny-5MB
+        name: PanamApp-Tiny-10MB
+        # இந்த முறை சரியான Cordova அவுட்புட் பாதை செட் செய்யப்பட்டுள்ளது:
         path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
