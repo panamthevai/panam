@@ -1,0 +1,48 @@
+Package: git
+Version: 2.56.0
+Architecture: aarch64
+Maintainer: Joshua Kahn <tom@termux.dev>
+Installed-Size: 25076
+Depends: libcurl, libexpat, libiconv, less, openssl, pcre2, zlib
+Recommends: openssh
+Suggests: perl
+Filename: debs/git_2.56.0_aarch64.deb
+Size: 4541040
+MD5sum: 8ce69754def265d7b2c7c32847ca8388
+SHA1: e46ac8b5cfc219f1869833a7af3322966864e024
+SHA256: dcdd22c5fdf7bdb5b825a03a17441d43858ed8515fea57fbb37eb42e733ca82f
+Homepage: https://git-scm.com/
+Description: Fast, scalable, distributed revision control system
+
+Package: mytool
+Version: 1.0.2
+Architecture: all
+Maintainer: panamthevai
+Filename: debs/mytool_1.0.2_all.deb
+Size: 972
+MD5sum: 743ed48e2c6a693f436a427fc8f91782
+SHA1: 5c1f7395b2de4c083c06bb4bf773f75fd93ac0e8
+SHA256: e4b1ec9e0aa377596488b7ca45ae7bb0f1417be9b388f68c2e5d90c619fe676f
+Section: utils
+Priority: optional
+Description: My custom working tool for Termux
+
+Package: python
+Version: 3.14.10
+Architecture: aarch64
+Maintainer: Yaksh Bariya <thunder-coding@termux.dev>
+Installed-Size: 26508
+Depends: gdbm, libandroid-posix-semaphore, libandroid-support, libbz2, libcrypt, libexpat, libffi, liblzma, libsqlite, ncurses, ncurses-ui-libs, openssl, readline, zlib, zstd
+Recommends: python-ensurepip-wheels, python-pip
+Suggests: python-tkinter
+Breaks: python2 (<= 2.7.15), python-dev
+Replaces: python-dev
+Provides: python3
+Filename: debs/python_3.14.10_aarch64.deb
+Size: 4893180
+MD5sum: b9888e201f5718bae3fb908daaa900f3
+SHA1: ee376c570d8c1e83603599911165636bb19be538
+SHA256: 1a5a300c8d844f2c18a3bb61cafbffb2e93fba9a7106ebe967f06c9628d1e434
+Homepage: https://python.org/
+Description: Python 3 programming language intended to enable clear programs
+

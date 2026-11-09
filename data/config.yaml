@@ -1,0 +1,7 @@
+mirror:
+  name: "Panam Tools"
+  enabled: true
+  update_interval: "24h"
+  protocols:
+    - https
+    - secure

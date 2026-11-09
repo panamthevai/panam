@@ -1,0 +1,7 @@
+{
+  "repo_name": "Panam Ultimate OS Mirror",
+  "status": "Active",
+  "version": "2.0.0",
+  "developer": "panamthevai",
+  "supported_arch": ["aarch64", "all"]
+}
