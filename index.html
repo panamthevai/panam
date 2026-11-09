@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Ubuntu Developer Web</title>
+    <style>
+        :root { --bg: #121212; --text: #ffffff; --primary: #00ff88; }
+        body.light { --bg: #ffffff; --text: #121212; --primary: #ff5722; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: 0.3s; text-align: center; }
+        header { padding: 40px; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+        h1 { color: var(--primary); font-size: 3rem; margin: 0; animation: pulse 2s infinite; }
+        .btn { background: var(--primary); color: #000; border: none; padding: 12px 24px; font-size: 16px; border-radius: 25px; cursor: pointer; font-weight: bold; margin: 10px; transition: 0.3s; }
+        .btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--primary); }
+        .container { max-width: 800px; margin: 30px auto; padding: 20px; }
+        .card { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 15px; margin: 20px 0; border-left: 5px solid var(--primary); text-align: left; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>வணக்கம், நான் உபுண்டு டெவலப்பர்! 🚀</h1>
+        <p>இந்த அட்வான்ஸ் வெப்சைட் எனது ஆண்ட்ராய்டு மொபைல் உபுண்டு சர்வர் மூலம் உருவாக்கப்பட்டது.</p>
+        <button class="btn" onclick="toggleTheme()">💡 தீம் மாற்றுக (Dark/Light)</button>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h3>⚙️ எனது சிஸ்டம் விபரங்கள்:</h3>
+            <p><strong>OS:</strong> Ubuntu Linux (PRoot inside Termux)</p>
+            <p><strong>Features:</strong> Dark Mode Active, Fully Responsive, GitHub Synced.</p>
+        </div>
+        <div class="card">
+            <h3>📈 விசிட்டர் கவுண்டர்:</h3>
+            <p>நீங்கள் இந்த பக்கத்தை பார்த்துக் கொண்டிருக்கிறீர்கள்! <span id="count" style="color:var(--primary); font-weight:bold;">1</span></p>
+        </div>
+    </div>
+    <script>
+        function toggleTheme() { document.body.classList.toggle('light'); }
+        // Simple mock counter animation
+        setInterval(() => {
+            let count = document.getElementById('count');
+            count.innerText = parseInt(count.innerText) + Math.floor(Math.random() * 3) + 1;
+        }, 3000);
+    </script>
+</body>
+</html>
