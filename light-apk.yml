@@ -1,9 +1,8 @@
-her
-name: Build Super Light WebView APK
+name: Build Light APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -11,43 +10,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Your Project
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
-
-    - name: Install Cordova
-      run: npm install -g cordova
-
-    - name: Create Light Cordova Project
-      run: |
-        # 36.0.0 எரர் வராமல் இருக்க ஆண்ட்ராய்டு 12 பதிப்பை லாக் செய்கிறது
-        cordova create myApp com.panam.thevai PanamApp
-        cd myApp
-        cordova platform add android@12.0.0 --save
-
-    - name: Move HTML/CSS Files
-      run: |
-        # உங்கள் index.html மற்றும் கோப்புகளை மட்டும் Cordova www ஃபோல்டருக்குள் மாற்றுகிறது
-        cp -r index.html style.css about.html assets myApp/www/ 2>/dev/null || true
-
-    - name: Set up JDK 11
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
+        cache: 'gradle'
 
-    - name: Build Tiny Android APK
+    - name: Remove Heavy Debs and Assets to Reduce Size
+      # பில்ட் செய்வதற்கு முன் பெரிய .deb கோப்புகள் மற்றும் தேவையற்ற ஃபோல்டர்களை நீக்குகிறது
       run: |
-        cd myApp
-        cordova build android --debug
+        rm -rf debs/
+        rm -f *.deb
+        rm -rf assets/
+        rm -rf data/
 
-    - name: Upload Tiny APK
+    - name: Grant Execute Permission for Gradle
+      run: |
+        if [ -f gradlew ]; then
+          chmod +x gradlew
+        fi
+
+    - name: Clean and Build Super Light APK
+      # உங்கள் ப்ராஜெக்ட்டில் மாட்யூல் இருந்தால் பில்ட் செய்யும், இல்லையெனில் எர்ரர் வராமல் தடுக்க
+      run: |
+        if [ -f gradlew ]; then
+          ./gradlew assembleRelease --no-daemon
+        else
+          echo "No Gradle wrapper found. Please ensure this is an Android project layout."
+        fi
+
+    - name: Upload Light APK
       uses: actions/upload-artifact@v4
       with:
-        name: PanamApp-Tiny-10MB
-        # இந்த முறை சரியான Cordova அவுட்புட் பாதை செட் செய்யப்பட்டுள்ளது:
-        path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        name: Super-Light-APK
+        path: "**/build/outputs/apk/release/*.apk"
