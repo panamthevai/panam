@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # கிட்ஹப் சர்வர் கணினி (மொபைல் ஆப் அல்ல)
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Your Panam Project
@@ -24,11 +24,9 @@ jobs:
     - name: Inject Web View UI and Scripts
       run: |
         cd termux-app
-        # உங்கள் டூலின் கோப்புகளை டெர்மக்ஸ் ஆப்பிற்குள் கச்சிதமாக இணைக்கும் பகுதி
         mkdir -p app/src/main/assets/boot
         mkdir -p app/src/main/assets/html
         
-        # உங்கள் index.html மற்றும் ஸ்கிரிப்ட்களை ஆப்பிற்குள் காப்பி செய்கிறது
         cp -r ../panam-src/index.html app/src/main/assets/html/
         cp -r ../panam-src/style.css app/src/main/assets/html/ 2>/dev/null || true
         cp -r ../panam-src/scripts/* app/src/main/assets/boot/ 2>/dev/null || true
@@ -50,4 +48,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: PanamApp-Native-Termux
-        path: termux-app/app/build/outputs/apk/debug/app-debug.apk
+        # பில்ட் ஆன அனைத்து APK கோப்புகளையும் தேடிக் கண்டுபிடிக்கும் புதிய பாதை:
+        path: termux-app/app/build/outputs/apk/**/*.apk
