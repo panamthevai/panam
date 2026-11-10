@@ -1,0 +1,5 @@
+Package: mytool
+Version: 2.0
+Architecture: all
+Maintainer: YourName panamthevai
+Description: My custom tool hosted on my own GitHub server

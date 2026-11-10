@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "========================================="
+echo "Vanakkam! Idhu Ennudaiya Own Server Tool!"
+echo "Version: 1.0"
+echo "========================================="
