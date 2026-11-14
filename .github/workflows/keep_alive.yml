@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wake up Render Website
-        run: curl -s https://onrender.com > /dev/null
+        run: curl -s https://panam-s94l.onrender.com > /dev/null
