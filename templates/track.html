@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        input, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; font-size: 16px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px; }
+        .status { font-weight: bold; color: #007bff; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h2>உங்கள் ஆர்டரைத் தேடுங்கள் (Track Order)</h2>
+    <form method="POST">
+        <input type="number" name="order_id" placeholder="Order ID (எ.கா: 1)" required>
+        <input type="text" name="phone" placeholder="மொபைல் எண்" required>
+        <button type="submit">நிலையைப் பார்க்க</button>
+    </form>
+
+    {% if order %}
+    <div class="card">
+        <h3>Order #{{ order['id'] }}</h3>
+        <p><b>பெயர்:</b> {{ order['customer_name'] }}</p>
+        <p><b>பொருட்கள்:</b> {{ order['items'] }}</p>
+        <p><b>தொகை:</b> ₹{{ order['total_amount'] }}</p>
+        <p><b>தற்போதைய நிலை:</b> <span class="status">{{ order['status'] }}</span></p>
+    </div>
+    {% endif %}
+</body>
+</html>

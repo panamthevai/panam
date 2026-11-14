@@ -1,222 +1,415 @@
 import os
 import sqlite3
-from datetime import datetime
-from urllib.parse import quote
-from flask import Flask, render_template_string, request, redirect
+import smtplib
+import threading
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from flask import Flask, render_template, request, redirect, url_for, flash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key_123")
 
-# --- உங்கள் விவரங்களை இங்கே மாற்றிக்கொள்ளலாம் ---
-SHOP_NAME = "சென்னை ஆன்லைன் ஸ்டோர்"
-UPI_ID = "yourname@okicici"
-ADMIN_PASSWORD = "admin123"
-# ---------------------------------------------
+# --- 1. DATABASE CONNECTION (Cloud PostgreSQL அல்லது Local SQLite) ---
+DATABASE_URL = os.environ.get("DATABASE_URL") # Render/Supabase Postgres URL
 
-def get_db():
-    conn = sqlite3.connect('store.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+def get_db_connection():
+    if DATABASE_URL:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return conn, True
+    else:
+        conn = sqlite3.connect('ecommerce.db')
+        conn.row_factory = sqlite3.Row
+        return conn, False
 
 def init_db():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS orders
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT, price INTEGER, 
-                  customer_name TEXT, phone TEXT, address TEXT, time TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS products
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price INTEGER, desc TEXT)''')
+    conn, is_pg = get_db_connection()
+    cur = conn.cursor()
+    id_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
     
-    c.execute("SELECT COUNT(*) FROM products")
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", 
-                  ("பாதாம் அல்வா (250g)", 150, "சுத்தமான நெய்யில் செய்தது"))
-        c.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", 
-                  ("சிக்கன் பிரியாணி", 220, "சீரக சம்பா தம் பிரியாணி"))
+    # Orders அட்டவணை (Table) உருவாக்குதல்
+    cur.execute(f'''
+        CREATE TABLE IF NOT EXISTS orders (
+            id {id_type},
+            customer_name TEXT NOT NULL,
+            customer_email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            address TEXT NOT NULL,
+            items TEXT NOT NULL,
+            total_amount REAL NOT NULL,
+            utr_number TEXT NOT NULL,
+            status TEXT DEFAULT 'Order Placed'
+        )
+    ''')
     conn.commit()
+    cur.close()
     conn.close()
 
 init_db()
 
-HOME_HTML = """
-<!DOCTYPE html>
-<html lang="ta">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ shop_name }}</title>
-    <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
-        .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 20px; text-align: center; border-radius: 12px; }
-        .card { background: white; padding: 16px; margin-top: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .price { color: #d93025; font-weight: bold; font-size: 19px; margin: 8px 0; }
-        input, textarea { width: 94%; padding: 10px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .upi-btn { display: block; text-align: center; background: #28a745; color: white; text-decoration: none; padding: 11px; border-radius: 6px; font-weight: bold; margin: 10px 0; }
-        .order-btn { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; font-size: 15px; cursor: pointer; }
-        .footer { text-align: center; margin-top: 25px; font-size: 13px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h2 style="margin:0;">🛍️ {{ shop_name }}</h2>
-        <p style="margin:5px 0 0 0; opacity:0.9;">நேரடி ஆன்லைன் ஆர்டர் தளம்</p>
-    </div>
+# --- 2. BACKGROUND EMAIL NOTIFICATION ---
+def send_email_task(customer_name, customer_email, order_id, total_amount, items):
+    sender_email = os.environ.get("SENDER_EMAIL")
+    app_password = os.environ.get("EMAIL_PASSWORD")
+    
+    if not sender_email or not app_password:
+        print("Email credentials not set in Environment Variables.")
+        return
 
-    {% if success %}
-    <div class="card" style="background: #d4edda; color: #155724; text-align: center; border: 1px solid #c3e6cb;">
-        <h3 style="margin:0;">🎉 ஆர்டர் வெற்றிகரமாகப் பதிவு செய்யப்பட்டது!</h3>
-        <p style="margin:5px 0 0 0;">உங்கள் பொருள் விரைவில் டெலிவரி செய்யப்படும்.</p>
-    </div>
-    {% endif %}
+    recipients = [sender_email]
+    if customer_email:
+        recipients.append(customer_email)
 
-    {% for item in products %}
-    <div class="card">
-        <h3 style="margin:0;">{{ item['name'] }}</h3>
-        <p style="color:#555; margin:5px 0;">{{ item['desc'] }}</p>
-        <p class="price">விலை: ₹{{ item['price'] }}</p>
-        
-        <a class="upi-btn" href="upi://pay?pa={{ upi_id }}&pn={{ encoded_shop }}&am={{ item['price'] }}&cu=INR&tn={{ item['name'] }}">
-            📲 GPay / PhonePe-ல் ₹{{ item['price'] }} செலுத்து
-        </a>
+    subject = f"ஆர்டர் உறுதிப்படுத்தப்பட்டது! - Order #{order_id}"
+    body = f"""வணக்கம் {customer_name},
 
-        <form action="/order" method="POST">
-            <input type="hidden" name="item" value="{{ item['name'] }}">
-            <input type="hidden" name="price" value="{{ item['price'] }}">
-            <input type="text" name="name" placeholder="உங்கள் பெயர்" required>
-            <input type="tel" name="phone" placeholder="மொபைல் எண்" required>
-            <textarea name="address" placeholder="முழு டெலிவரி முகவரி" rows="2" required></textarea>
-            <button type="submit" class="order-btn">✅ பணம் செலுத்திவிட்டேன் - ஆர்டர் செய்</button>
-        </form>
-    </div>
-    {% endfor %}
+உங்கள் ஆர்டர் வெற்றிகரமாகப் பதிவு செய்யப்பட்டுள்ளது!
 
-    <div class="footer">
-        <a href="/admin" style="color:#555; text-decoration:none; font-weight:bold;">🔒 Admin Login</a>
-    </div>
-</body>
-</html>
+ஆர்டர் எண் (Order ID): #{order_id}
+பொருட்கள்: {items}
+மொத்த தொகை: ₹{total_amount}
+தற்போதைய நிலை: Order Placed
+
+உங்கள் ஆர்டர் நிலையை இணையதளத்தில் 'Track Order' மூலம் தெரிந்துகொள்ளலாம்.
+நன்றி!
 """
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = ", ".join(recipients)
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
-ADMIN_HTML = """
-<!DOCTYPE html>
-<html lang="ta">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - {{ shop_name }}</title>
-    <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f6f9; margin: 0; }
-        .box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-        input { width: 93%; padding: 9px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
-        .add-btn { background: #28a745; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; font-weight: bold; }
-        .del-btn { background: #dc3545; color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; float: right; }
-        .order-card { border-left: 4px solid #1a73e8; padding: 10px; background: #f8f9fa; margin-bottom: 10px; border-radius: 4px; }
-        .prod-item { padding: 10px 0; border-bottom: 1px solid #eee; }
-    </style>
-</head>
-<body>
-    <h2>⚙️ {{ shop_name }} - நிர்வாகப் பக்கம்</h2>
-    <p><a href="/">← வாடிக்கையாளர் பக்கத்திற்குச் செல்</a></p>
+    try:
+        server = smtplib.SMTP('://gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, app_password)
+        server.sendmail(sender_email, recipients, msg.as_string())
+        server.quit()
+        print(f"Email sent for Order #{order_id}")
+    except Exception as e:
+        print(f"Email Error: {e}")
 
-    <div class="box">
-        <h3 style="margin-top:0;">➕ புதிய பொருள் சேர்க்க</h3>
-        <form action="/add_product?pass={{ pwd }}" method="POST">
-            <input type="text" name="name" placeholder="பொருளின் பெயர் (எ.கா: மைசூர் பாக் 250g)" required>
-            <input type="number" name="price" placeholder="விலை (எ.கா: 180)" required>
-            <input type="text" name="desc" placeholder="சிறிய விளக்கம் (எ.கா: நெய் மைசூர் பாக்)" required>
-            <button type="submit" class="add-btn">பொருளைச் சேர்</button>
-        </form>
-    </div>
-
-    <div class="box">
-        <h3 style="margin-top:0;">📦 கடையில் உள்ள பொருட்கள் ({{ products|length }})</h3>
-        {% for p in products %}
-        <div class="prod-item">
-            <b>{{ p['name'] }}</b> - ₹{{ p['price'] }}
-            <a class="del-btn" href="/delete_product/{{ p['id'] }}?pass={{ pwd }}">நீக்கு</a>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="box">
-        <h3 style="margin-top:0;">📋 வந்திருக்கும் ஆர்டர்கள் ({{ orders|length }})</h3>
-        {% for o in orders %}
-        <div class="order-card">
-            <b>ஆர்டர் #{{ o['id'] }}</b> ({{ o['time'] }})<br>
-            <b>பொருள்:</b> {{ o['item'] }} (₹{{ o['price'] }})<br>
-            <b>பெயர்:</b> {{ o['customer_name'] }} | <b>போன்:</b> {{ o['phone'] }}<br>
-            <b>முகவரி:</b> {{ o['address'] }}
-        </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
-"""
+# --- 3. ROUTES (பக்கங்கள்) ---
 
 @app.route('/')
-def home():
-    success = request.args.get('success')
-    conn = get_db()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
-    conn.close()
-    return render_template_string(HOME_HTML, shop_name=SHOP_NAME, products=products, 
-                                  upi_id=UPI_ID, encoded_shop=quote(SHOP_NAME), success=success)
+def index():
+    return render_template('index.html')
 
-@app.route('/order', methods=['POST'])
+# ஆர்டர் பதிவு செய்தல் (Checkout & Place Order)
+@app.route('/place_order', methods=['POST'])
 def place_order():
-    item = request.form['item']
-    price = request.form['price']
-    name = request.form['name']
-    phone = request.form['phone']
-    address = request.form['address']
-    now = datetime.now().strftime("%d-%m-%Y %I:%M %p")
+    name = request.form.get('name')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    address = request.form.get('address')
+    items = request.form.get('items')
+    total_amount = request.form.get('total_amount')
+    utr = request.form.get('utr')
 
-    conn = get_db()
-    conn.execute("INSERT INTO orders (item, price, customer_name, phone, address, time) VALUES (?, ?, ?, ?, ?, ?)",
-                 (item, price, name, phone, address, now))
+    conn, is_pg = get_db_connection()
+    cur = conn.cursor()
+    placeholder = "%s" if is_pg else "?"
+
+    query = f'''
+        INSERT INTO orders (customer_name, customer_email, phone, address, items, total_amount, utr_number)
+        VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+    '''
+    if is_pg:
+        query += " RETURNING id"
+
+    cur.execute(query, (name, email, phone, address, items, total_amount, utr))
+    
+    if is_pg:
+        new_order_id = cur.fetchone()['id']
+    else:
+        new_order_id = cur.lastrowid
+
     conn.commit()
+    cur.close()
     conn.close()
-    return redirect('/?success=1')
 
+    # தளம் மெதுவாகாமல் இருக்க பின்னணியில் (Background) மெயில் அனுப்புதல்
+    threading.Thread(
+        target=send_email_task,
+        args=(name, email, new_order_id, total_amount, items)
+    ).start()
+
+    return render_template('order_success.html', order_id=new_order_id, name=name)
+
+# வாடிக்கையாளர் ஆர்டர் நிலை அறிதல் (Order Tracking)
+@app.route('/track', methods=['GET', 'POST'])
+def track_order():
+    order = None
+    if request.method == 'POST':
+        order_id = request.form.get('order_id')
+        phone = request.form.get('phone')
+        
+        conn, is_pg = get_db_connection()
+        cur = conn.cursor()
+        placeholder = "%s" if is_pg else "?"
+        
+        cur.execute(f"SELECT * FROM orders WHERE id = {placeholder} AND phone = {placeholder}", (order_id, phone))
+        order = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not order:
+            flash("தவறான Order ID அல்லது மொபைல் எண்!")
+
+    return render_template('track.html', order=order)
+
+# Admin Panel - அனைத்து ஆர்டர்களையும் பார்க்க
 @app.route('/admin')
-def admin():
-    pwd = request.args.get('pass')
-    if pwd != ADMIN_PASSWORD:
-        return '''
-        <form action="/admin" method="GET" style="padding:30px; font-family:sans-serif; text-align:center;">
-            <h3>🔒 Admin Login</h3>
-            <input type="password" name="pass" placeholder="பாஸ்வேர்டு உள்ளிடவும்" style="padding:10px; border-radius:5px; border:1px solid #ccc;"><br><br>
-            <button type="submit" style="padding:10px 20px; background:#1a73e8; color:white; border:none; border-radius:5px;">உள்நுழை</button>
-        </form>
-        '''
-    conn = get_db()
-    orders = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+def admin_panel():
+    conn, is_pg = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM orders ORDER BY id DESC")
+    orders = cur.fetchall()
+    cur.close()
     conn.close()
-    return render_template_string(ADMIN_HTML, shop_name=SHOP_NAME, orders=orders, products=products, pwd=pwd)
+    return render_template('admin.html', orders=orders)
 
-@app.route('/add_product', methods=['POST'])
-def add_product():
-    pwd = request.args.get('pass')
-    if pwd == ADMIN_PASSWORD:
-        name = request.form['name']
-        price = request.form['price']
-        desc = request.form['desc']
-        conn = get_db()
-        conn.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", (name, price, desc))
-        conn.commit()
-        conn.close()
-    return redirect(f'/admin?pass={pwd}')
+# Admin Status Update (Packed / Shipped / Delivered)
+@app.route('/update_status/<int:order_id>', methods=['POST'])
+def update_status(order_id):
+    new_status = request.form.get('status')
+    conn, is_pg = get_db_connection()
+    cur = conn.cursor()
+    placeholder = "%s" if is_pg else "?"
+    
+    cur.execute(f"UPDATE orders SET status = {placeholder} WHERE id = {placeholder}", (new_status, order_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('admin_panel'))
 
-@app.route('/delete_product/<int:prod_id>')
-def delete_product(prod_id):
-    pwd = request.args.get('pass')
-    if pwd == ADMIN_PASSWORD:
-        conn = get_db()
-        conn.execute("DELETE FROM products WHERE id=?", (prod_id,))
-        conn.commit()
-        conn.close()
-    return redirect(f'/admin?pass={pwd}')
+if __name__ == '__main__':
+    app.run(debug=True)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+
+
+
+
+#import os
+#import sqlite3
+#from datetime import datetime
+#from urllib.parse import quote
+#from flask import Flask, render_template_string, request, redirect
+#
+#app = Flask(__name__)
+#
+## --- உங்கள் விவரங்களை இங்கே மாற்றிக்கொள்ளலாம் ---
+#SHOP_NAME = "சென்னை ஆன்லைன் ஸ்டோர்"
+#UPI_ID = "yourname@okicici"
+#ADMIN_PASSWORD = "admin123"
+## ---------------------------------------------
+#
+#def get_db():
+#    conn = sqlite3.connect('store.db')
+#    conn.row_factory = sqlite3.Row
+#    return conn
+#
+#def init_db():
+#    conn = get_db()
+#    c = conn.cursor()
+#    c.execute('''CREATE TABLE IF NOT EXISTS orders
+#                 (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT, price INTEGER, 
+#                  customer_name TEXT, phone TEXT, address TEXT, time TEXT)''')
+#    c.execute('''CREATE TABLE IF NOT EXISTS products
+#                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price INTEGER, desc TEXT)''')
+#    
+#    c.execute("SELECT COUNT(*) FROM products")
+#    if c.fetchone()[0] == 0:
+#        c.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", 
+#                  ("பாதாம் அல்வா (250g)", 150, "சுத்தமான நெய்யில் செய்தது"))
+#        c.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", 
+#                  ("சிக்கன் பிரியாணி", 220, "சீரக சம்பா தம் பிரியாணி"))
+#    conn.commit()
+#    conn.close()
+#
+#init_db()
+#
+#HOME_HTML = """
+#<!DOCTYPE html>
+#<html lang="ta">
+#<head>
+#    <meta charset="UTF-8">
+#    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+#    <title>{{ shop_name }}</title>
+#    <style>
+#        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
+#        .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 20px; text-align: center; border-radius: 12px; }
+#        .card { background: white; padding: 16px; margin-top: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+#        .price { color: #d93025; font-weight: bold; font-size: 19px; margin: 8px 0; }
+#        input, textarea { width: 94%; padding: 10px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+#        .upi-btn { display: block; text-align: center; background: #28a745; color: white; text-decoration: none; padding: 11px; border-radius: 6px; font-weight: bold; margin: 10px 0; }
+#        .order-btn { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; font-size: 15px; cursor: pointer; }
+#        .footer { text-align: center; margin-top: 25px; font-size: 13px; }
+#    </style>
+#</head>
+#<body>
+#    <div class="header">
+#        <h2 style="margin:0;">🛍️ {{ shop_name }}</h2>
+#        <p style="margin:5px 0 0 0; opacity:0.9;">நேரடி ஆன்லைன் ஆர்டர் தளம்</p>
+#    </div>
+#
+#    {% if success %}
+#    <div class="card" style="background: #d4edda; color: #155724; text-align: center; border: 1px solid #c3e6cb;">
+#        <h3 style="margin:0;">🎉 ஆர்டர் வெற்றிகரமாகப் பதிவு செய்யப்பட்டது!</h3>
+#        <p style="margin:5px 0 0 0;">உங்கள் பொருள் விரைவில் டெலிவரி செய்யப்படும்.</p>
+#    </div>
+#    {% endif %}
+#
+#    {% for item in products %}
+#    <div class="card">
+#        <h3 style="margin:0;">{{ item['name'] }}</h3>
+#        <p style="color:#555; margin:5px 0;">{{ item['desc'] }}</p>
+#        <p class="price">விலை: ₹{{ item['price'] }}</p>
+#        
+#        <a class="upi-btn" href="upi://pay?pa={{ upi_id }}&pn={{ encoded_shop }}&am={{ item['price'] }}&cu=INR&tn={{ item['name'] }}">
+#            📲 GPay / PhonePe-ல் ₹{{ item['price'] }} செலுத்து
+#        </a>
+#
+#        <form action="/order" method="POST">
+#            <input type="hidden" name="item" value="{{ item['name'] }}">
+#            <input type="hidden" name="price" value="{{ item['price'] }}">
+#            <input type="text" name="name" placeholder="உங்கள் பெயர்" required>
+#            <input type="tel" name="phone" placeholder="மொபைல் எண்" required>
+#            <textarea name="address" placeholder="முழு டெலிவரி முகவரி" rows="2" required></textarea>
+#            <button type="submit" class="order-btn">✅ பணம் செலுத்திவிட்டேன் - ஆர்டர் செய்</button>
+#        </form>
+#    </div>
+#    {% endfor %}
+#
+#    <div class="footer">
+#        <a href="/admin" style="color:#555; text-decoration:none; font-weight:bold;">🔒 Admin Login</a>
+#    </div>
+#</body>
+#</html>
+#"""
+#
+#ADMIN_HTML = """
+#<!DOCTYPE html>
+#<html lang="ta">
+#<head>
+#    <meta charset="UTF-8">
+#    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+#    <title>Admin Panel - {{ shop_name }}</title>
+#    <style>
+#        body { font-family: sans-serif; padding: 15px; background: #f4f6f9; margin: 0; }
+#        .box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+#        input { width: 93%; padding: 9px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+#        .add-btn { background: #28a745; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; font-weight: bold; }
+#        .del-btn { background: #dc3545; color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; float: right; }
+#        .order-card { border-left: 4px solid #1a73e8; padding: 10px; background: #f8f9fa; margin-bottom: 10px; border-radius: 4px; }
+#        .prod-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+#    </style>
+#</head>
+#<body>
+#    <h2>⚙️ {{ shop_name }} - நிர்வாகப் பக்கம்</h2>
+#    <p><a href="/">← வாடிக்கையாளர் பக்கத்திற்குச் செல்</a></p>
+#
+#    <div class="box">
+#        <h3 style="margin-top:0;">➕ புதிய பொருள் சேர்க்க</h3>
+#        <form action="/add_product?pass={{ pwd }}" method="POST">
+#            <input type="text" name="name" placeholder="பொருளின் பெயர் (எ.கா: மைசூர் பாக் 250g)" required>
+#            <input type="number" name="price" placeholder="விலை (எ.கா: 180)" required>
+#            <input type="text" name="desc" placeholder="சிறிய விளக்கம் (எ.கா: நெய் மைசூர் பாக்)" required>
+#            <button type="submit" class="add-btn">பொருளைச் சேர்</button>
+#        </form>
+#    </div>
+#
+#    <div class="box">
+#        <h3 style="margin-top:0;">📦 கடையில் உள்ள பொருட்கள் ({{ products|length }})</h3>
+#        {% for p in products %}
+#        <div class="prod-item">
+#            <b>{{ p['name'] }}</b> - ₹{{ p['price'] }}
+#            <a class="del-btn" href="/delete_product/{{ p['id'] }}?pass={{ pwd }}">நீக்கு</a>
+#        </div>
+#        {% endfor %}
+#    </div>
+#
+#    <div class="box">
+#        <h3 style="margin-top:0;">📋 வந்திருக்கும் ஆர்டர்கள் ({{ orders|length }})</h3>
+#        {% for o in orders %}
+#        <div class="order-card">
+#            <b>ஆர்டர் #{{ o['id'] }}</b> ({{ o['time'] }})<br>
+#            <b>பொருள்:</b> {{ o['item'] }} (₹{{ o['price'] }})<br>
+#            <b>பெயர்:</b> {{ o['customer_name'] }} | <b>போன்:</b> {{ o['phone'] }}<br>
+#            <b>முகவரி:</b> {{ o['address'] }}
+#        </div>
+#        {% endfor %}
+#    </div>
+#</body>
+#</html>
+#"""
+#
+#@app.route('/')
+#def home():
+#    success = request.args.get('success')
+#    conn = get_db()
+#    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+#    conn.close()
+#    return render_template_string(HOME_HTML, shop_name=SHOP_NAME, products=products, 
+#                                  upi_id=UPI_ID, encoded_shop=quote(SHOP_NAME), success=success)
+#
+#@app.route('/order', methods=['POST'])
+#def place_order():
+#    item = request.form['item']
+#    price = request.form['price']
+#    name = request.form['name']
+#    phone = request.form['phone']
+#    address = request.form['address']
+#    now = datetime.now().strftime("%d-%m-%Y %I:%M %p")
+#
+#    conn = get_db()
+#    conn.execute("INSERT INTO orders (item, price, customer_name, phone, address, time) VALUES (?, ?, ?, ?, ?, ?)",
+#                 (item, price, name, phone, address, now))
+#    conn.commit()
+#    conn.close()
+#    return redirect('/?success=1')
+#
+#@app.route('/admin')
+#def admin():
+#    pwd = request.args.get('pass')
+#    if pwd != ADMIN_PASSWORD:
+#        return '''
+#        <form action="/admin" method="GET" style="padding:30px; font-family:sans-serif; text-align:center;">
+#            <h3>🔒 Admin Login</h3>
+#            <input type="password" name="pass" placeholder="பாஸ்வேர்டு உள்ளிடவும்" style="padding:10px; border-radius:5px; border:1px solid #ccc;"><br><br>
+#            <button type="submit" style="padding:10px 20px; background:#1a73e8; color:white; border:none; border-radius:5px;">உள்நுழை</button>
+#        </form>
+#        '''
+#    conn = get_db()
+#    orders = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
+#    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+#    conn.close()
+#    return render_template_string(ADMIN_HTML, shop_name=SHOP_NAME, orders=orders, products=products, pwd=pwd)
+#
+#@app.route('/add_product', methods=['POST'])
+#def add_product():
+#    pwd = request.args.get('pass')
+#    if pwd == ADMIN_PASSWORD:
+#        name = request.form['name']
+#        price = request.form['price']
+#        desc = request.form['desc']
+#        conn = get_db()
+#        conn.execute("INSERT INTO products (name, price, desc) VALUES (?, ?, ?)", (name, price, desc))
+#        conn.commit()
+#        conn.close()
+#    return redirect(f'/admin?pass={pwd}')
+#
+#@app.route('/delete_product/<int:prod_id>')
+#def delete_product(prod_id):
+#    pwd = request.args.get('pass')
+#    if pwd == ADMIN_PASSWORD:
+#        conn = get_db()
+#        conn.execute("DELETE FROM products WHERE id=?", (prod_id,))
+#        conn.commit()
+#        conn.close()
+#    return redirect(f'/admin?pass={pwd}')
+#
+#if __name__ == "__main__":
+#    port = int(os.environ.get("PORT", 8080))
+#    app.run(host="0.0.0.0", port=port)
