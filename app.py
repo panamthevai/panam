@@ -81,7 +81,7 @@ def send_email_task(customer_name, customer_email, order_id, total_amount, items
     msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
     try:
-        server = smtplib.SMTP('://gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(sender_email, app_password)
         server.sendmail(sender_email, recipients, msg.as_string())
