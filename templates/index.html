@@ -3,121 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panam Ultimate Hub v3.0 | Cloud API & Auto-Heal</title>
+    <title>Panam Ultimate Cloud v4.0 | All-in-One API Hub</title>
     <style>
-        :root {
-            --bg-color: #090d16;
-            --card-bg: #111827;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --accent: #00f5d4;
-            --accent-hover: #00cbb0;
-            --border-color: #1f2937;
-        }
-        .light-mode {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --accent: #0284c7;
-            --accent-hover: #0369a1;
-            --border-color: #e2e8f0;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; transition: 0.3s; }
-        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 25px; }
-        .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-        .status-badge { font-size: 0.7rem; background: rgba(0, 245, 212, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--accent); }
-        .theme-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .hero { text-align: center; padding: 35px 20px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 25px; }
-        .hero h1 { font-size: 1.9rem; margin-bottom: 12px; }
-        .hero p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; }
-        .terminal-box { background: #000; border: 1px solid #333; border-radius: 10px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
-        .terminal-code { color: #00f5d4; font-family: monospace; font-size: 0.85rem; word-break: break-all; }
-        .copy-btn { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px; white-space: nowrap; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 25px; }
-        .card { background: var(--card-bg); padding: 22px; border-radius: 14px; border: 1px solid var(--border-color); }
-        .card h3 { color: var(--accent); margin-bottom: 8px; font-size: 1.15rem; }
-        .card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; }
-        .btn-link { display: inline-block; color: var(--text-main); text-decoration: none; background: var(--bg-color); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-        .btn-link:hover { border-color: var(--accent); color: var(--accent); }
-        #apiOutput { background: #000; color: #00f5d4; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85rem; margin-bottom: 25px; display: none; white-space: pre-wrap; border: 1px solid var(--accent); }
-        footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        :root { --bg: #090d16; --card: #111827; --text: #f3f4f6; --muted: #9ca3af; --accent: #00f5d4; --border: #1f2937; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+        .container { max-width: 950px; margin: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 25px; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+        .badge { font-size: 0.75rem; background: rgba(0,245,212,0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--accent); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 25px; }
+        .card { background: var(--card); padding: 20px; border-radius: 14px; border: 1px solid var(--border); }
+        .card h3 { color: var(--accent); margin-bottom: 8px; font-size: 1.1rem; }
+        .card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+        input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; font-size: 0.85rem; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+        #outputBox { background: #000; color: #00f5d4; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85rem; margin-bottom: 25px; display: none; white-space: pre-wrap; border: 1px solid var(--accent); overflow-x: auto; }
+        #qrPreview { display: none; margin-top: 10px; border-radius: 8px; border: 2px solid var(--accent); max-width: 150px; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
-        <div class="logo">🚀 PANAM v3.0 <span class="status-badge">● AUTO-HEAL ACTIVE</span></div>
-        <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ Light Mode</button>
+        <div class="logo">🚀 PANAM CLOUD v4.0</div>
+        <span class="badge">● 8 APIs ONLINE</span>
     </header>
 
-    <section class="hero">
-        <h1>Panam Cloud API & Termux Hub</h1>
-        <p>சுய-பழுதுபார்ப்பு (Auto-Healing), மைக்ரோ-API மற்றும் தானியங்கி கிரான் ஷெட்யூலர் கொண்ட நவீன கிளவுட் தளம்.</p>
-        
-        <div class="terminal-box">
-            <span class="terminal-code" id="cmdText">curl -sL https://onrender.com | bash</span>
-            <button class="copy-btn" onclick="copyCommand()" id="copyBtn">Copy</button>
-        </div>
-    </section>
+    <div id="outputBox"></div>
 
-    <div id="apiOutput"></div>
-
-    <section class="grid">
+    <div class="grid">
+        <!-- Feature 20 -->
         <div class="card">
-            <h3>🛡️ 16. Auto-Healing Engine</h3>
-            <p>சர்வரில் பிழை ஏற்பட்டாலும் தானாகவே தன்னைச் சரிசெய்து 24/7 இயங்கும் பாதுகாப்பு அமைப்பு.</p>
-            <button class="btn-link" onclick="fetchApi('/api/logs')">Check System Logs →</button>
+            <h3>🌍 20. Cloud Web Proxy</h3>
+            <p>எந்த இணையதளத்தின் டேட்டாவையும் Render சர்வர் வழியாக எடுக்கவும்.</p>
+            <input type="text" id="proxyUrl" value="https://httpbin.org" placeholder="Enter URL">
+            <button class="btn" onclick="runGet('/api/proxy?url=' + encodeURIComponent(document.getElementById('proxyUrl').value))">Fetch via Cloud →</button>
         </div>
 
+        <!-- Feature 21 -->
         <div class="card">
-            <h3>🌐 17. Live IP & Hash APIs</h3>
-            <p>உங்கள் உண்மையான IP முகவரி மற்றும் SHA-256 ரகசியக் குறியீட்டை நொடியில் உருவாக்கும் API.</p>
-            <button class="btn-link" onclick="fetchApi('/api/ip')">Test My IP API →</button>
-            <button class="btn-link" onclick="fetchApi('/api/hash?text=PanamCloud')">Test Hash API →</button>
+            <h3>📱 21. Instant QR Generator</h3>
+            <p>எந்த லிங்க் அல்லது டெக்ஸ்ட்டையும் உடனடியாக QR Code படமாக மாற்றவும்.</p>
+            <input type="text" id="qrText" value="https://onrender.com" placeholder="Enter text or link">
+            <button class="btn" onclick="makeQr()">Generate QR →</button>
+            <br><img id="qrPreview" alt="QR Code">
         </div>
 
+        <!-- Feature 22 -->
         <div class="card">
-            <h3>⏱️ 18. Cloud Cron Scheduler</h3>
-            <p>ஒவ்வொரு 10 நிமிடத்திற்கும் பின்னணியில் தானாகவே சர்வர் ஆரோக்கியத்தைச் சரிபார்க்கும் டைமர்.</p>
-            <a href="/api/logs" target="_blank" class="btn-link">Open Raw JSON Logs ↗</a>
+            <h3>🔥 22. Burn-After-Reading Secret</h3>
+            <p>ஒருமுறை திறந்து பார்த்தவுடன் தானாகவே அழியும் ரகசிய லிங்க் உருவாக்கவும்.</p>
+            <input type="text" id="secretMsg" placeholder="ரகசிய மெசேஜ் அல்லது பாஸ்வேர்ட்...">
+            <button class="btn" onclick="createSecret()">Create Secret Link →</button>
         </div>
-    </section>
 
-    <footer>
-        <p>© 2026 Panam Cloud v3.0 | Auto-Heal, Micro-APIs & Cron Active</p>
-    </footer>
+        <!-- Feature 23 -->
+        <div class="card">
+            <h3>🖥️ 23. Server CPU & RAM Monitor</h3>
+            <p>Render கிளவுட் சர்வரின் தற்போதைய CPU மற்றும் RAM பயன்பாட்டைப் பார்க்கவும்.</p>
+            <button class="btn" onclick="runGet('/api/sysinfo')">Check Server Health →</button>
+        </div>
+
+        <!-- Feature 24 -->
+        <div class="card">
+            <h3>🕷️ 24. Smart Web Scraper</h3>
+            <p>ஒரு இணையதளத்தின் தலைப்பு மற்றும் முக்கிய செய்திகளை மட்டும் பிரித்தெடுக்கவும்.</p>
+            <input type="text" id="scrapeUrl" value="https://ycombinator.com" placeholder="Enter Website URL">
+            <button class="btn" onclick="runGet('/api/scrape?url=' + encodeURIComponent(document.getElementById('scrapeUrl').value))">Extract Data →</button>
+        </div>
+
+        <!-- Features 16, 17, 18 -->
+        <div class="card">
+            <h3>🛡️ 16-18. IP, Auto-Heal & Logs</h3>
+            <p>உங்கள் IP முகவரி மற்றும் தானியங்கி Cron பதிவுகளைச் சரிபார்க்கவும்.</p>
+            <button class="btn" onclick="runGet('/api/ip')">My IP</button>
+            <button class="btn" onclick="runGet('/api/logs')">System Logs</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    function toggleTheme() {
-        document.body.classList.toggle('light-mode');
-        document.getElementById('themeBtn').innerText = document.body.classList.contains('light-mode') ? '🌙 Dark Mode' : '☀️ Light Mode';
-    }
-
-    function copyCommand() {
-        navigator.clipboard.writeText(document.getElementById('cmdText').innerText);
-        const btn = document.getElementById('copyBtn');
-        btn.innerText = 'Copied! ✅';
-        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
-    }
-
-    async function fetchApi(endpoint) {
-        const out = document.getElementById('apiOutput');
-        out.style.display = 'block';
-        out.innerText = '⏳ Loading data from ' + endpoint + '...';
+    async function runGet(url) {
+        const box = document.getElementById('outputBox');
+        box.style.display = 'block';
+        box.innerText = '⏳ Processing in Render Cloud...';
         try {
-            const res = await fetch(endpoint);
+            const res = await fetch(url);
             const data = await res.json();
-            out.innerText = JSON.stringify(data, null, 2);
-        } catch (err) {
-            out.innerText = '❌ Error connecting to API';
-        }
+            box.innerText = JSON.stringify(data, null, 2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) { box.innerText = '❌ Error connecting to API'; }
+    }
+
+    function makeQr() {
+        const text = encodeURIComponent(document.getElementById('qrText').value);
+        const img = document.getElementById('qrPreview');
+        img.src = '/api/qr?data=' + text;
+        img.style.display = 'block';
+    }
+
+    async function createSecret() {
+        const text = document.getElementById('secretMsg').value;
+        if (!text) return alert('மெசேஜை உள்ளிடவும்!');
+        const box = document.getElementById('outputBox');
+        box.style.display = 'block';
+        box.innerText = '⏳ Encrypting Secret...';
+        const res = await fetch('/api/secret/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        box.innerText = JSON.stringify(data, null, 2);
+        document.getElementById('secretMsg').value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 </script>
-
 </body>
 </html>

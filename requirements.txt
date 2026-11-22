@@ -2,3 +2,6 @@ flask
 gunicorn
 requests
 apscheduler
+qrcode[pil]
+psutil
+beautifulsoup4
