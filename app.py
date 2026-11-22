@@ -1,52 +1,68 @@
-from flask import Flask, render_template, send_from_directory, jsonify, request
-import os, json, datetime
+from flask import Flask, render_template, send_from_directory, request, redirect, url_for, Response
+import os
 
 app = Flask(__name__)
-STATS_FILE = 'stats.json'
 
-# விசிட்டர் மற்றும் டவுன்லோட் டேட்டாவைச் சேமிக்கும் அமைப்பு
-def get_stats():
-    if not os.path.exists(STATS_FILE):
-        return {"visitors": 0, "downloads": 0, "last_updated": "Never"}
-    with open(STATS_FILE, 'r') as f:
-        return json.load(f)
-
-def save_stats(data):
-    with open(STATS_FILE, 'w') as f:
-        json.dump(data, f)
+# உங்களது ரகசிய பாஸ்வேர்ட் மற்றும் API கீ (இதை மாற்றிக்கொள்ளவும்)
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASS", "panam2026")
+SECRET_API_KEY = os.environ.get("API_KEY", "PANAM_VIP_999")
+UPLOAD_FOLDER = '.'
 
 @app.route('/')
 def home():
-    stats = get_stats()
-    stats["visitors"] += 1
-    save_stats(stats)
-    return render_template('index.html', stats=stats)
+    files = [f for f in os.listdir('.') if f.endswith(('.deb', '.sh', '.apk'))]
+    return render_template('index.html', files=files)
 
-# Termux APT Repository & Direct File Server
+# அம்சம் 4: Secret Key பாதுகாப்புடன் கூடிய Installer
 @app.route('/install.sh')
-def install_script():
-    stats = get_stats()
-    stats["downloads"] += 1
-    save_stats(stats)
+def protected_install():
+    user_key = request.args.get('key')
+    if user_key != SECRET_API_KEY:
+        return Response("echo '❌ தவறான Secret Key! அணுகல் மறுக்கப்பட்டது.'\nexit 1", mimetype='text/plain', status=403)
     return send_from_directory('.', 'install.sh', mimetype='text/plain')
 
+# அம்சம் 2: Web Admin Panel (கோப்புகளை அப்லோட் செய்ய)
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_panel():
+    msg = ""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password != ADMIN_PASSWORD:
+            msg = "❌ தவறான பாஸ்வேர்ட்!"
+        elif 'file' in request.files:
+            file = request.files['file']
+            if file.filename != '':
+                file.save(os.path.join(UPLOAD_FOLDER, file.filename))
+                msg = f"✅ {file.filename} வெற்றிகரமாக அப்லோட் செய்யப்பட்டது!"
+
+    return f'''
+    <html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{ background:#090d16; color:#fff; font-family:sans-serif; text-align:center; padding:40px; }}
+        .box {{ background:#111827; padding:30px; border-radius:12px; max-width:400px; margin:auto; border:1px solid #00f5d4; }}
+        input, button {{ width:100%; padding:12px; margin:10px 0; border-radius:6px; border:none; }}
+        button {{ background:#00f5d4; color:#000; font-weight:bold; cursor:pointer; }}
+    </style></head>
+    <body>
+        <div class="box">
+            <h2>🔐 Panam Cloud Admin</h2>
+            <p style="color:#00f5d4;">{msg}</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="password" name="password" placeholder="Admin Password (panam2026)" required>
+                <input type="file" name="file" required>
+                <button type="submit">Upload to Cloud 🚀</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    '''
+
 @app.route('/<path:filename>')
-def serve_repo_files(filename):
+def serve_files(filename):
     if os.path.exists(filename):
         return send_from_directory('.', filename)
-    return jsonify({"error": "File not found in Panam Cloud"}), 404
-
-# Live API Status (Termux-ல் இருந்து நிலையை அறிய)
-@app.route('/api/status')
-def api_status():
-    stats = get_stats()
-    return jsonify({
-        "status": "ONLINE",
-        "server": "Panam Render Cloud v3.0",
-        "total_visitors": stats["visitors"],
-        "script_installs": stats["downloads"],
-        "server_time": str(datetime.datetime.now())
-    })
+    return "File not found", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
