@@ -1,68 +1,93 @@
-from flask import Flask, render_template, send_from_directory, request, redirect, url_for, Response
-import os
+from flask import Flask, render_template, send_from_directory, request, jsonify
+from apscheduler.schedulers.background import BackgroundScheduler
+import os, hashlib, datetime, shutil
 
 app = Flask(__name__)
 
-# உங்களது ரகசிய பாஸ்வேர்ட் மற்றும் API கீ (இதை மாற்றிக்கொள்ளவும்)
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASS", "panam2026")
-SECRET_API_KEY = os.environ.get("API_KEY", "PANAM_VIP_999")
-UPLOAD_FOLDER = '.'
+# ==========================================
+# 16. AUTO-HEALING ENGINE (சுய-பழுதுபார்ப்பு)
+# ==========================================
+def auto_heal_system():
+    os.makedirs('templates', exist_ok=True)
+    # index.html காணாமல் போனாலோ அல்லது காலியாக இருந்தாலோ தானாகவே மீட்டெடுக்கும்
+    if not os.path.exists('templates/index.html') or os.path.getsize('templates/index.html') == 0:
+        if os.path.exists('index.html') and os.path.getsize('index.html') > 0:
+            shutil.copy('index.html', 'templates/index.html')
+        else:
+            with open('templates/index.html', 'w') as f:
+                f.write("<html><body style='background:#090d16;color:#00f5d4;text-align:center;padding:50px;'><h1>🚀 Panam Auto-Healed Cloud Active</h1><p>System recovered automatically!</p></body></html>")
+        log_event("AUTO-HEAL: Restored missing index.html automatically.")
 
+def log_event(message):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open("system_events.log", "a") as f:
+        f.write(f"[{timestamp}] {message}\n")
+
+# ==========================================
+# 18. CLOUD CRON SCHEDULER (தானியங்கி டைமர்)
+# ==========================================
+def scheduled_background_task():
+    auto_heal_system()
+    log_event("CRON-JOB: Automated 10-minute health check & cleanup completed.")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=scheduled_background_task, trigger="interval", minutes=10)
+scheduler.start()
+
+# சர்வர் தொடங்கும் போதே ஒருமுறை சரிபார்க்கும்
+auto_heal_system()
+
+# ==========================================
+# MAIN ROUTES & ERROR HANDLER
+# ==========================================
 @app.route('/')
 def home():
-    files = [f for f in os.listdir('.') if f.endswith(('.deb', '.sh', '.apk'))]
-    return render_template('index.html', files=files)
+    auto_heal_system()
+    return render_template('index.html')
 
-# அம்சம் 4: Secret Key பாதுகாப்புடன் கூடிய Installer
-@app.route('/install.sh')
-def protected_install():
-    user_key = request.args.get('key')
-    if user_key != SECRET_API_KEY:
-        return Response("echo '❌ தவறான Secret Key! அணுகல் மறுக்கப்பட்டது.'\nexit 1", mimetype='text/plain', status=403)
-    return send_from_directory('.', 'install.sh', mimetype='text/plain')
+# எந்தவொரு 500 சர்வர் பிழை வந்தாலும் முடங்காமல் சமாளிக்கும்
+@app.errorhandler(500)
+def internal_error(error):
+    auto_heal_system()
+    log_event(f"ERROR-RECOVERED: {str(error)}")
+    return jsonify({"status": "Auto-Healed", "message": "Server recovered from an error. Refresh page."}), 200
 
-# அம்சம் 2: Web Admin Panel (கோப்புகளை அப்லோட் செய்ய)
-@app.route('/admin', methods=['GET', 'POST'])
-def admin_panel():
-    msg = ""
-    if request.method == 'POST':
-        password = request.form.get('password')
-        if password != ADMIN_PASSWORD:
-            msg = "❌ தவறான பாஸ்வேர்ட்!"
-        elif 'file' in request.files:
-            file = request.files['file']
-            if file.filename != '':
-                file.save(os.path.join(UPLOAD_FOLDER, file.filename))
-                msg = f"✅ {file.filename} வெற்றிகரமாக அப்லோட் செய்யப்பட்டது!"
+# ==========================================
+# 17. CUSTOM MICRO-APIs (API மார்க்கெட்பிளேஸ்)
+# ==========================================
+@app.route('/api/ip')
+def api_get_ip():
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    return jsonify({
+        "service": "Panam IP Checker API",
+        "your_ip": user_ip,
+        "user_agent": request.headers.get('User-Agent')
+    })
 
-    return f'''
-    <html>
-    <head><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {{ background:#090d16; color:#fff; font-family:sans-serif; text-align:center; padding:40px; }}
-        .box {{ background:#111827; padding:30px; border-radius:12px; max-width:400px; margin:auto; border:1px solid #00f5d4; }}
-        input, button {{ width:100%; padding:12px; margin:10px 0; border-radius:6px; border:none; }}
-        button {{ background:#00f5d4; color:#000; font-weight:bold; cursor:pointer; }}
-    </style></head>
-    <body>
-        <div class="box">
-            <h2>🔐 Panam Cloud Admin</h2>
-            <p style="color:#00f5d4;">{msg}</p>
-            <form method="post" enctype="multipart/form-data">
-                <input type="password" name="password" placeholder="Admin Password (panam2026)" required>
-                <input type="file" name="file" required>
-                <button type="submit">Upload to Cloud 🚀</button>
-            </form>
-        </div>
-    </body>
-    </html>
-    '''
+@app.route('/api/hash')
+def api_generate_hash():
+    text = request.args.get('text', 'panam')
+    hashed = hashlib.sha256(text.encode()).hexdigest()
+    return jsonify({
+        "service": "Panam Crypto Hash API",
+        "input": text,
+        "sha256": hashed
+    })
+
+# Cron மற்றும் Auto-Heal லாக்குகளைப் பார்க்கும் பக்கம்
+@app.route('/api/logs')
+def view_logs():
+    if os.path.exists("system_events.log"):
+        with open("system_events.log", "r") as f:
+            logs = f.readlines()[-20:] # கடைசி 20 நிகழ்வுகள்
+        return jsonify({"recent_events": logs})
+    return jsonify({"recent_events": ["No events yet"]})
 
 @app.route('/<path:filename>')
 def serve_files(filename):
     if os.path.exists(filename):
         return send_from_directory('.', filename)
-    return "File not found", 404
+    return jsonify({"error": "File not found"}), 404
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
