@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panam Ultimate Hub | Termux & Linux Cloud Mirror</title>
+    <title>Panam Ultimate Hub v3.0 | Cloud API & Auto-Heal</title>
     <style>
         :root {
             --bg-color: #090d16;
@@ -14,7 +14,6 @@
             --accent-hover: #00cbb0;
             --border-color: #1f2937;
         }
-
         .light-mode {
             --bg-color: #f8fafc;
             --card-bg: #ffffff;
@@ -24,246 +23,101 @@
             --accent-hover: #0369a1;
             --border-color: #e2e8f0;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-badge {
-            font-size: 0.75rem;
-            background: rgba(0, 245, 212, 0.15);
-            color: var(--accent);
-            padding: 4px 10px;
-            border-radius: 20px;
-            border: 1px solid var(--accent);
-        }
-
-        .theme-btn {
-            background: var(--card-bg);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        /* Hero Section */
-        .hero {
-            text-align: center;
-            padding: 40px 20px;
-            background: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 30px;
-        }
-
-        .hero h1 {
-            font-size: 2.2rem;
-            margin-bottom: 15px;
-        }
-
-        .hero p {
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto 25px;
-        }
-
-        /* Terminal Box */
-        .terminal-box {
-            background: #000000;
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 15px 20px;
-            max-width: 650px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            text-align: left;
-        }
-
-        .terminal-code {
-            color: #00f5d4;
-            font-family: 'Courier New', monospace;
-            font-size: 0.95rem;
-            overflow-x: auto;
-        }
-
-        .copy-btn {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 15px;
-            white-space: nowrap;
-        }
-
-        .copy-btn:hover {
-            background: var(--accent-hover);
-        }
-
-        /* Grid Cards */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 14px;
-            border: 1px solid var(--border-color);
-        }
-
-        .card h3 {
-            color: var(--accent);
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-
-        .card p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 15px;
-        }
-
-        .btn-link {
-            display: inline-block;
-            color: var(--text-main);
-            text-decoration: none;
-            background: var(--bg-color);
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .btn-link:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* Footer */
-        footer {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; transition: 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 25px; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        .status-badge { font-size: 0.7rem; background: rgba(0, 245, 212, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--accent); }
+        .theme-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .hero { text-align: center; padding: 35px 20px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 25px; }
+        .hero h1 { font-size: 1.9rem; margin-bottom: 12px; }
+        .hero p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; }
+        .terminal-box { background: #000; border: 1px solid #333; border-radius: 10px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .terminal-code { color: #00f5d4; font-family: monospace; font-size: 0.85rem; word-break: break-all; }
+        .copy-btn { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px; white-space: nowrap; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 25px; }
+        .card { background: var(--card-bg); padding: 22px; border-radius: 14px; border: 1px solid var(--border-color); }
+        .card h3 { color: var(--accent); margin-bottom: 8px; font-size: 1.15rem; }
+        .card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; }
+        .btn-link { display: inline-block; color: var(--text-main); text-decoration: none; background: var(--bg-color); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-link:hover { border-color: var(--accent); color: var(--accent); }
+        #apiOutput { background: #000; color: #00f5d4; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85rem; margin-bottom: 25px; display: none; white-space: pre-wrap; border: 1px solid var(--accent); }
+        footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding-top: 20px; border-top: 1px solid var(--border-color); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="logo">
-            🚀 PANAM HUB <span class="status-badge">● LIVE</span>
-        </div>
+        <div class="logo">🚀 PANAM v3.0 <span class="status-badge">● AUTO-HEAL ACTIVE</span></div>
         <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ Light Mode</button>
     </header>
 
     <section class="hero">
-        <h1>Termux & Ubuntu Cloud Mirror</h1>
-        <p>ஆண்ட்ராய்டு மொபைல் உபுண்டு சர்வர் (PRoot) மற்றும் GitHub மூலம் நேரடியாக இயக்கப்படும் அதிவேக டூல் சென்டர்.</p>
+        <h1>Panam Cloud API & Termux Hub</h1>
+        <p>சுய-பழுதுபார்ப்பு (Auto-Healing), மைக்ரோ-API மற்றும் தானியங்கி கிரான் ஷெட்யூலர் கொண்ட நவீன கிளவுட் தளம்.</p>
         
         <div class="terminal-box">
-            <span class="terminal-code" id="cmdText">curl -sL httpsஉங்களது_புதிய_STATIC_URL | bash</span>
+            <span class="terminal-code" id="cmdText">curl -sL https://onrender.com | bash</span>
             <button class="copy-btn" onclick="copyCommand()" id="copyBtn">Copy</button>
         </div>
     </section>
 
+    <div id="apiOutput"></div>
+
     <section class="grid">
         <div class="card">
-            <h3>⚡ Auto-Sync Engine</h3>
-            <p>Termux-ல் இருந்து நேரடியாக GitHub மற்றும் Render கிளவுட் சர்வரை நொடியில் அப்டேட் செய்யும் வசதி.</p>
-            <a href="#setup" class="btn-link" onclick="alert('மேலே உள்ள Termux கமாண்டை காப்பி செய்து இயக்கவும்!')">Setup Guide →</a>
+            <h3>🛡️ 16. Auto-Healing Engine</h3>
+            <p>சர்வரில் பிழை ஏற்பட்டாலும் தானாகவே தன்னைச் சரிசெய்து 24/7 இயங்கும் பாதுகாப்பு அமைப்பு.</p>
+            <button class="btn-link" onclick="fetchApi('/api/logs')">Check System Logs →</button>
         </div>
 
         <div class="card">
-            <h3>🐧 Ubuntu PRoot Server</h3>
-            <p>ஆண்ட்ராய்டு சாதனத்தில் முழுமையான Linux சூழல் மற்றும் டெவலப்மென்ட் டூல்கள்.</p>
-            <a href="#system" class="btn-link" onclick="showSysInfo()">System Specs →</a>
+            <h3>🌐 17. Live IP & Hash APIs</h3>
+            <p>உங்கள் உண்மையான IP முகவரி மற்றும் SHA-256 ரகசியக் குறியீட்டை நொடியில் உருவாக்கும் API.</p>
+            <button class="btn-link" onclick="fetchApi('/api/ip')">Test My IP API →</button>
+            <button class="btn-link" onclick="fetchApi('/api/hash?text=PanamCloud')">Test Hash API →</button>
         </div>
 
         <div class="card">
-            <h3>📦 Custom Packages</h3>
-            <p>உங்களது பிரத்யேக .deb மற்றும் ஷெல் (Shell) ஸ்கிரிப்ட்களை நேரடியாக பதிவிறக்கம் செய்யவும்.</p>
-            <a href="install.sh" download class="btn-link">Download Script ↓</a>
+            <h3>⏱️ 18. Cloud Cron Scheduler</h3>
+            <p>ஒவ்வொரு 10 நிமிடத்திற்கும் பின்னணியில் தானாகவே சர்வர் ஆரோக்கியத்தைச் சரிபார்க்கும் டைமர்.</p>
+            <a href="/api/logs" target="_blank" class="btn-link">Open Raw JSON Logs ↗</a>
         </div>
     </section>
 
     <footer>
-        <p>© 2026 Panam Ultimate Hub | Powered by Android Termux & Render Cloud</p>
+        <p>© 2026 Panam Cloud v3.0 | Auto-Heal, Micro-APIs & Cron Active</p>
     </footer>
 </div>
 
 <script>
     function toggleTheme() {
         document.body.classList.toggle('light-mode');
-        const btn = document.getElementById('themeBtn');
-        if (document.body.classList.contains('light-mode')) {
-            btn.innerText = '🌙 Dark Mode';
-        } else {
-            btn.innerText = '☀️ Light Mode';
-        }
+        document.getElementById('themeBtn').innerText = document.body.classList.contains('light-mode') ? '🌙 Dark Mode' : '☀️ Light Mode';
     }
 
     function copyCommand() {
-        const cmd = document.getElementById('cmdText').innerText;
-        navigator.clipboard.writeText(cmd);
+        navigator.clipboard.writeText(document.getElementById('cmdText').innerText);
         const btn = document.getElementById('copyBtn');
         btn.innerText = 'Copied! ✅';
         setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
     }
 
-    function showSysInfo() {
-        alert("OS: Ubuntu Linux (PRoot inside Termux)\nHost: Render Cloud\nSync: GitHub Auto-Deploy Active");
+    async function fetchApi(endpoint) {
+        const out = document.getElementById('apiOutput');
+        out.style.display = 'block';
+        out.innerText = '⏳ Loading data from ' + endpoint + '...';
+        try {
+            const res = await fetch(endpoint);
+            const data = await res.json();
+            out.innerText = JSON.stringify(data, null, 2);
+        } catch (err) {
+            out.innerText = '❌ Error connecting to API';
+        }
     }
 </script>
 
 </body>
 </html>
-
