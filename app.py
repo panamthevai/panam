@@ -1,15 +1,19 @@
 from flask import Flask, render_template, send_from_directory, request, jsonify, send_file
 from apscheduler.schedulers.background import BackgroundScheduler
 from bs4 import BeautifulSoup
-import os, hashlib, datetime, shutil, io, uuid, requests, qrcode, psutil
+from fpdf import FPDF
+import yt_dlp
+import os, hashlib, datetime, shutil, io, uuid, json, requests, qrcode, psutil
 
 app = Flask(__name__)
 
-# தற்காலிக சீக்ரெட் மெசேஜ்களைச் சேமிக்கும் இடம் (Feature 22)
+# தரவு சேமிப்பகங்கள்
 SECRET_VAULT = {}
+DB_FILE = 'panam_cloud_db.json'
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "") # Render Environment-ல் உங்கள் Key-ஐ சேர்க்கலாம்
 
 # ==========================================
-# 16 & 18. AUTO-HEALING & CRON SCHEDULER
+# 16 & 18. AUTO-HEALING & CRON SCHEDULER (OLD)
 # ==========================================
 def auto_heal_system():
     os.makedirs('templates', exist_ok=True)
@@ -23,7 +27,7 @@ def log_event(message):
         f.write(f"[{timestamp}] {message}\n")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=lambda: log_event("CRON: 10-min health check OK"), trigger="interval", minutes=10)
+scheduler.add_job(func=lambda: log_event("CRON: v5.0 Super Server Health OK"), trigger="interval", minutes=10)
 scheduler.start()
 auto_heal_system()
 
@@ -33,7 +37,7 @@ def home():
     return render_template('index.html')
 
 # ==========================================
-# 17. IP & HASH APIs
+# 17, 20, 21, 22, 23, 24. OLD CORE APIs
 # ==========================================
 @app.route('/api/ip')
 def api_get_ip():
@@ -51,27 +55,15 @@ def view_logs():
             return jsonify({"recent_events": f.readlines()[-15:]})
     return jsonify({"recent_events": ["System Active"]})
 
-# ==========================================
-# 20. CLOUD WEB PROXY API (தளங்களைப் படிக்க)
-# ==========================================
 @app.route('/api/proxy')
 def cloud_proxy():
     target_url = request.args.get('url')
-    if not target_url:
-        return jsonify({"error": "URL parameter required. Ex: /api/proxy?url=https://example.com"}), 400
+    if not target_url: return jsonify({"error": "URL required"}), 400
     try:
-        resp = requests.get(target_url, timeout=8, headers={"User-Agent": "PanamCloudProxy/4.0"})
-        return jsonify({
-            "status_code": resp.status_code,
-            "target": target_url,
-            "content_preview": resp.text[:1000] # முதல் 1000 எழுத்துக்கள்
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        resp = requests.get(target_url, timeout=8, headers={"User-Agent": "PanamProxy/5.0"})
+        return jsonify({"status": resp.status_code, "preview": resp.text[:1000]})
+    except Exception as e: return jsonify({"error": str(e)}), 500
 
-# ==========================================
-# 21. INSTANT QR CODE GENERATOR API
-# ==========================================
 @app.route('/api/qr')
 def generate_qr():
     data = request.args.get('data', 'https://onrender.com')
@@ -81,67 +73,140 @@ def generate_qr():
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
-# ==========================================
-# 22. BURN-AFTER-READING SECRET SHARE
-# ==========================================
 @app.route('/api/secret/create', methods=['POST'])
 def create_secret():
-    data = request.json or {}
-    secret_text = data.get('text', '')
-    if not secret_text:
-        return jsonify({"error": "No secret text provided"}), 400
+    secret_text = (request.json or {}).get('text', '')
+    if not secret_text: return jsonify({"error": "Text required"}), 400
     secret_id = str(uuid.uuid4())[:8]
     SECRET_VAULT[secret_id] = secret_text
-    return jsonify({
-        "status": "Created",
-        "secret_id": secret_id,
-        "one_time_link": f"https://onrender.com/api/secret/read/{secret_id}"
-    })
+    return jsonify({"one_time_link": f"https://onrender.com/api/secret/read/{secret_id}"})
 
 @app.route('/api/secret/read/<secret_id>')
 def read_secret(secret_id):
     if secret_id in SECRET_VAULT:
-        msg = SECRET_VAULT.pop(secret_id) # படித்தவுடன் அழித்துவிடும்!
-        return jsonify({"status": "DESTROYED_AFTER_READING", "secret_message": msg})
-    return jsonify({"error": "Secret already destroyed or invalid ID!"}), 404
+        return jsonify({"status": "DESTROYED", "secret": SECRET_VAULT.pop(secret_id)})
+    return jsonify({"error": "Already destroyed or invalid!"}), 404
 
-# ==========================================
-# 23. SERVER CPU & RAM MONITOR API
-# ==========================================
 @app.route('/api/sysinfo')
 def system_monitor():
     mem = psutil.virtual_memory()
     return jsonify({
-        "cpu_usage_percent": psutil.cpu_percent(interval=0.5),
-        "ram_total_mb": round(mem.total / (1024 * 1024), 2),
+        "cpu_percent": psutil.cpu_percent(interval=0.5),
         "ram_used_mb": round(mem.used / (1024 * 1024), 2),
-        "ram_percent": mem.percent,
-        "active_secrets_in_vault": len(SECRET_VAULT)
+        "ram_percent": mem.percent
     })
 
-# ==========================================
-# 24. SMART WEB SCRAPER API (தலைப்புச் செய்திகள் / லிங்க் எடுக்க)
-# ==========================================
 @app.route('/api/scrape')
 def smart_scraper():
     target_url = request.args.get('url', 'https://ycombinator.com')
     try:
-        resp = requests.get(target_url, timeout=8)
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        title = soup.title.string.strip() if soup.title else "No Title"
-        headings = [h.get_text(strip=True) for h in soup.find_all(['h1', 'h2', 'h3'])[:10]]
+        soup = BeautifulSoup(requests.get(target_url, timeout=8).text, 'html.parser')
+        headings = [h.get_text(strip=True) for h in soup.find_all(['h1', 'h2', 'h3'])[:8]]
+        return jsonify({"title": soup.title.string.strip() if soup.title else "No Title", "headings": headings})
+    except Exception as e: return jsonify({"error": str(e)}), 500
+
+# ==========================================
+# 25. GEMINI AI ASSISTANT API (NEW)
+# ==========================================
+@app.route('/api/ai', methods=['POST'])
+def ai_assistant():
+    data = request.json or {}
+    prompt = data.get('prompt', '')
+    user_key = data.get('api_key') or GEMINI_API_KEY
+    if not prompt: return jsonify({"error": "கேள்வியை உள்ளிடவும் (Prompt required)"}), 400
+    if not user_key:
+        return jsonify({"error": "Gemini API Key தேவை! Render Environment அல்லது கீழே உள்ள பெட்டியில் Key கொடுக்கவும்."}), 400
+    try:
+        url = f"https://googleapis.com{user_key}"
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        res = requests.post(url, json=payload, timeout=15).json()
+        reply = res['candidates'][0]['content']['parts'][0]['text']
+        return jsonify({"ai_response": reply})
+    except Exception as e:
+        return jsonify({"error": "AI Connection Error", "details": str(e)}), 500
+
+# ==========================================
+# 26. VIDEO / AUDIO STREAM EXTRACTOR API (NEW)
+# ==========================================
+@app.route('/api/media')
+def media_extractor():
+    video_url = request.args.get('url')
+    if not video_url: return jsonify({"error": "Video URL required"}), 400
+    try:
+        ydl_opts = {'quiet': True, 'no_warnings': True, 'format': 'best'}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            return jsonify({
+                "title": info.get('title'),
+                "duration_sec": info.get('duration'),
+                "direct_stream_url": info.get('url'),
+                "thumbnail": info.get('thumbnail')
+            })
+    except Exception as e:
+        return jsonify({"error": "Media extraction failed", "details": str(e)}), 500
+
+# ==========================================
+# 27. INSTANT PDF DOCUMENT GENERATOR API (NEW)
+# ==========================================
+@app.route('/api/pdf')
+def create_pdf():
+    title = request.args.get('title', 'Panam Cloud Document')
+    content = request.args.get('text', 'Generated from Panam Ultimate Cloud v5.0')
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt=title.encode('latin-1', 'replace').decode('latin-1'), ln=1, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=content.encode('latin-1', 'replace').decode('latin-1'))
+    buf = io.BytesIO()
+    pdf.output(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name="panam_doc.pdf", mimetype='application/pdf')
+
+# ==========================================
+# 28. LIVE CRYPTO & CURRENCY MARKET API (NEW)
+# ==========================================
+@app.route('/api/market')
+def live_market():
+    try:
+        crypto = requests.get("https://coingecko.com", timeout=6).json()
+        forex = requests.get("https://er-api.com", timeout=6).json()
         return jsonify({
-            "source_url": target_url,
-            "page_title": title,
-            "extracted_headings": headings
+            "usd_to_inr": forex.get("rates", {}).get("INR"),
+            "bitcoin_inr": crypto.get("bitcoin", {}).get("inr"),
+            "ethereum_inr": crypto.get("ethereum", {}).get("inr"),
+            "timestamp": str(datetime.datetime.now())
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Market API error", "details": str(e)}), 500
+
+# ==========================================
+# 30. MINI CLOUD KEY-VALUE DATABASE API (NEW)
+# ==========================================
+def load_db():
+    if not os.path.exists(DB_FILE): return {}
+    with open(DB_FILE, 'r') as f: return json.load(f)
+
+def save_db(data):
+    with open(DB_FILE, 'w') as f: json.dump(data, f, indent=2)
+
+@app.route('/api/db', methods=['GET', 'POST'])
+def cloud_database():
+    db = load_db()
+    if request.method == 'POST':
+        data = request.json or {}
+        key, val = data.get('key'), data.get('value')
+        if not key: return jsonify({"error": "Key required"}), 400
+        db[key] = val
+        save_db(db)
+        return jsonify({"status": "Saved to Cloud DB", "key": key, "value": val})
+    key = request.args.get('key')
+    if key: return jsonify({key: db.get(key, "Not Found")})
+    return jsonify({"all_stored_data": db})
 
 @app.route('/<path:filename>')
 def serve_files(filename):
-    if os.path.exists(filename):
-        return send_from_directory('.', filename)
+    if os.path.exists(filename): return send_from_directory('.', filename)
     return jsonify({"error": "File not found"}), 404
 
 if __name__ == '__main__':

@@ -5,3 +5,5 @@ apscheduler
 qrcode[pil]
 psutil
 beautifulsoup4
+yt-dlp
+fpdf2
