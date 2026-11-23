@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: my-advanced-app
+    env: python # Node.js என்றால் 'node' என மாற்றவும்
+    plan: free
+    buildCommand: pip install -r requirements.txt # Node.js என்றால் 'npm install'
+    startCommand: gunicorn app:app # Node.js என்றால் 'node index.js'
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
